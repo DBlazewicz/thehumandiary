@@ -1,0 +1,40 @@
+<%- include("partials/header") -%>
+
+<div class="container-fluid">
+  <div class = "col-lg-8 timerBar">
+    <div class="timeElapsed" id="myBar">
+
+    </div>
+  </div>
+  <div class="col-lg-8 diary-page">
+
+    <div class="row">
+      <div class="col-sm-6">
+        <h2 class="date"><%=page.title%></h2>
+
+      </div>
+
+      <div class="prompt-block">
+        <h2 class="prompt"><%=page.prompt.quote%></h2>
+        <h3 class="attribution"><%=page.prompt.author%></h3>
+      </div>
+    </div>
+    <form class="" action="/compose/<%=page.dateId%>" method="post">
+      <input class="new-entry" type="text" name="newEntry" value="" placeHolder="What are you thinking?">
+      <div align="right">
+        <button type="submit" class="save btn btn-outline-dark">Save</button>
+        <a href="/" class="cancel btn btn-outline-light">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- JQuery -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+
+<!-- sweetalert -->
+<script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+
+<script src="/scripts/timer.js"></script>
+
+<%- include("partials/footer") -%>

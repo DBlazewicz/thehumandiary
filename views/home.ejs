@@ -1,0 +1,44 @@
+<%- include("partials/header") -%>
+
+<div class="container-fluid">
+  <% pageList.forEach(function(page, index, arr) { %>
+    <div class="col-lg-8 diary-page">
+      <div class="row">
+        <div class="col-sm-6">
+          <h2 class="date"><%=page.title%></h2>
+
+        </div>
+        <div class="col-sm-6" align="right">
+          <button type="button" class="btn btn-outline-dark" onClick="location.href='../compose/<%=page.dateId%>'">New Entry</button>
+        </div>
+        <div class="prompt-block">
+          <h2 class="prompt"><%=page.prompt.quote%></h2>
+          <h3 class="attribution"><%=page.prompt.author%></h3>
+        </div>
+      </div>
+
+        <% page.entries.forEach(function(entry) { %>
+
+          <p class="entry"><%=entry.content%></p>
+
+          <% if(entry.author === id) { %>
+            <form class="" action="/delete/<%=entry.content%>" method="post">
+
+              <div align="right">
+                <button type="submit" class="btn btn-outline-dark">Delete</button>
+              </div>
+            </form>
+          <% } %>
+
+
+        <% }); %>
+        <% if(index !== arr.length-1) { %>
+          <hr  />
+        <% } %>
+
+    </div>
+<%  }); %>
+
+</div>
+
+<%- include("partials/footer") -%>
