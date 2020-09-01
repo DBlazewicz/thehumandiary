@@ -32,7 +32,9 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 //db connection
-mongoose.connect('mongodb://localhost/test', {useNewUrlParser: true, useUnifiedTopology: true, useFindAndModify: false});
+mongoose.connect('mongodb+srv://admin:'
+  + process.env.DB_PASSWORD +
+  '@thddb.dhydb.mongodb.net/test?retryWrites=true&w=majority', {useNewUrlParser: true, useUnifiedTopology: true, useFindAndModify: false});
 const db = mongoose.connection;
 
 db.on('error', console.error.bind(console, 'connection error'));
@@ -88,7 +90,7 @@ passport.deserializeUser(function(id, done) {
 passport.use(new GoogleStrategy({
     clientID: process.env.CLIENT_ID,
     clientSecret: process.env.CLIENT_SECRET,
-    callbackURL: "http://localhost:3000/auth/google/home",
+    callbackURL: "https://the-human-diary.herokuapp.com/auth/google/home",
     userProfileURL: "https://www.googleapis.com/oauth2/v3/userinfo"
   },
   function(accessToken, refreshToken, profile, cb) {
@@ -244,8 +246,13 @@ app.get("/auth/google/home",
   }
 );
 
-app.listen(3000, function() {
-  console.log("server started on port 3000");
+let port = process.env.PORT;
+if(port == null || port == "") {
+  port = 3000;
+}
+
+app.listen(port, function() {
+  console.log("server started successfully");
 });
 
 //things that should probably be modularized out
