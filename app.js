@@ -13,6 +13,7 @@ const passportLocalMongoose = require("passport-local-mongoose");
 const findOrCreate = require('mongoose-findorcreate');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 
+//setup node app settings
 const app = express();
 
 app.use(express.static("public"));
@@ -20,6 +21,7 @@ app.use(express.static("public"));
 app.set('view engine', 'ejs');
 app.use(bodyParser.urlencoded({extended:true}));
 
+//passport/authentication
 app.use(session({
   secret: process.env.SESSION_SECRET,
   resave: false,
@@ -29,7 +31,8 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
-mongoose.connect('mongodb://localhost/test', {useNewUrlParser: true, useUnifiedTopology: true});
+//db connection
+mongoose.connect('mongodb://localhost/test', {useNewUrlParser: true, useUnifiedTopology: true, useFindAndModify: false});
 const db = mongoose.connection;
 
 db.on('error', console.error.bind(console, 'connection error'));
@@ -39,13 +42,17 @@ db.once('open', function() {
 
 mongoose.set("useCreateIndex", true);
 
+//mongoose schemas:
+//entries
 const entrySchema = new mongoose.Schema({
   author: String,
-  content: String
+  content: String,
+  page: String //date as id
 });
 
 const Entry = mongoose.model('Entry', entrySchema);
 
+//prompt
 const promptSchema = new mongoose.Schema({
   author: String,
   quote: String
@@ -53,16 +60,12 @@ const promptSchema = new mongoose.Schema({
 
 const Prompt = mongoose.model('Prompt', promptSchema);
 
-const pageSchema = new mongoose.Schema({
-  dateId: String,
-  title: String,
-  prompt: promptSchema,
-  entries: [entrySchema]
-});
-
+//user (and setup for OAuth)
 const userSchema = new mongoose.Schema ({
   googleId: String,
-  entries: [entrySchema]
+  myEntries: [mongoose.ObjectId],
+  savedEntries: [mongoose.ObjectId],
+  datesPosted: [String]
 });
 
 userSchema.plugin(passportLocalMongoose);
@@ -97,59 +100,45 @@ passport.use(new GoogleStrategy({
   }
 ));
 
-const Page = mongoose.model('Page', pageSchema);
-
-const exampleEntry = new Entry({author: 'example', content: 'Here is an example entry'});
-
-var examplePrompt = new Prompt({
-  author: 'Carl Jung',
-  quote: 'Mistakes are, after all, the foundations of truth, and if a man does not know what a thing is, it is at least an increase in knowledge if he knows what it is not.'
+//page
+const pageSchema = new mongoose.Schema({
+  dateId: String,
+  title: String,
+  prompt: promptSchema,
+  recentEntries: [entrySchema],
+  allEntries: [mongoose.ObjectId]
 });
 
-const examplePage = new Page({dateId: "2020-01-01", title: "Monday, Jan 1", prompt: examplePrompt, entries: [exampleEntry]});
+const Page = mongoose.model('Page', pageSchema);
 
 app.get("/", function(req, res) {
   const day = date.getDateAsObject();
-  // const apiKey=	"4e8af86d0d4a212eb3eead0b2bbcba8e";
-  //
-  // const url = "https://favqs.com/api/qotd";
-  //
-  // https.get(url, function(response) {
-  //   response.on("data", function(data) {
-  //     const quoteData = JSON.parse(data);
-  //     const author = quoteData.quote.author;
-  //     const quote = quoteData.quote.body;
-  //
-  //
-  //   })
-  // })
+
   console.log(day.id);
   if(Page.findOne({dateId: day.id}, function(err, foundPage) {
     if(err) {
       console.log(err);
     } else {
       if(foundPage) {
-        console.log("found a page");
+
         Page.find({}, function(err, pages) {
           if(err) {
             console.log(err);
           } else {
-            // if(pages.length === 0) {
-            //   Page.insertMany(examplePage);
-            //   res.redirect("/");
-            // } else {
               pages.sort(function(a, b) {return date.compareDateIds(a, b)});
 
               if(req.isAuthenticated()) {
-                res.render("home", {pageList: pages, id: req.user.id});
+
+                User.findById(req.user.id, function(err, foundUser) {
+                  res.render("home", {pageList: pages, id: req.user.id, datesPosted: foundUser.datesPosted, signedIn: true});
+                });
               } else {
-                res.render("home", {pageList: pages, id: 'none'});
+                res.render("home", {pageList: pages, id: 'none', datesPosted: [], signedIn: false});
               }
-            // }
           }
         });
       } else {
-        console.log("need to create a page");
+
         newPage(day, function(newPage)  {
           newPage.save();
           res.redirect("/");
@@ -157,9 +146,6 @@ app.get("/", function(req, res) {
       }
     }
   }));
-
-
-  // res.render("home", {today: day.title, id: day.id, quote: quote, author: author, entryList: entries});
 
 });
 
@@ -169,7 +155,7 @@ app.get("/compose/:day", function(req, res) {
       if(err) {
         console.log(err);
       } else {
-        res.render("compose", {page: foundPage});
+        res.render("compose", {page: foundPage, signedIn: true});
 
       }
     });
@@ -184,7 +170,8 @@ app.post("/compose/:day", function(req, res) {
   if(req.body.newEntry !== '') {
     let newEntry = Entry({
       author: req.user.id,
-      content: req.body.newEntry
+      content: req.body.newEntry,
+      page: req.params.day
     });
 
     console.log(req.body.newEntry);
@@ -192,7 +179,8 @@ app.post("/compose/:day", function(req, res) {
       if(err) {
         console.log(err);
       } else {
-        foundPage.entries.push(newEntry);
+        foundPage.recentEntries.push(newEntry);
+        foundPage.allEntries.push(newEntry._id);
         foundPage.save();
       }
     });
@@ -200,26 +188,50 @@ app.post("/compose/:day", function(req, res) {
       if(err) {
         console.log(err);
       } else {
-        foundUser.entries.push(newEntry);
+        foundUser.myEntries.push(newEntry._id);
+        foundUser.datesPosted.push(req.params.day);
         foundUser.save();
       }
-    })
+    });
+
+    newEntry.save();
   }
 
   res.redirect("/");
 })
 
+app.post("/delete/:entryId", function(req, res) {
+
+  Entry.findByIdAndDelete(req.params.entryId, function(err, foundEntry) {
+
+      Page.findOneAndUpdate(
+        {dateId: foundEntry.page},
+        {$pull: {recentEntries: {_id: foundEntry._id}, allEntries: foundEntry._id}},
+        function(err, foundPage) {
+          if(!err) {
+            User.findByIdAndUpdate(foundEntry.author,
+            {$pull: {myEntries: foundEntry._id, datesPosted: foundEntry.page}},
+            function(err, foundUser) {
+              res.redirect("/");
+            })
+          }
+        }
+      );
+  })
+})
+
 app.get("/about", function(req, res) {
-  res.render("about");
+  res.render("about", {signedIn: req.isAuthenticated()});
 })
 
 app.get("/login", function(req, res) {
-  res.render("login");
+  res.render("login", {signedIn: req.isAuthenticated()});
 })
 
-app.listen(3000, function() {
-  console.log("server started on port 3000");
-});
+app.get("/signout", function(req, res) {
+  req.logout();
+  res.redirect("/");
+})
 
 app.get("/auth/google",
   passport.authenticate('google', { scope: ["profile"] })
@@ -228,11 +240,13 @@ app.get("/auth/google",
 app.get("/auth/google/home",
   passport.authenticate('google', { failureRedirect: "/login" }),
   function(req, res) {
-    // Successful authentication, redirect to secrets.
     res.redirect("/");
-    // res.send("Logged in");
-  });
+  }
+);
 
+app.listen(3000, function() {
+  console.log("server started on port 3000");
+});
 
 //things that should probably be modularized out
 function getQuote(callback) {
@@ -262,7 +276,8 @@ function newPage(date, callback) {
           dateId: date.id,
           title: date.title,
           prompt: newPrompt,
-          entries: []
+          recentEntries: [],
+          allEntries: []
         });
 
         callback(newPage);
