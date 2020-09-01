@@ -38,6 +38,10 @@ h3 {
   font-size: 1.5rem;
 }
 
+p {
+  line-height: 1.6;
+}
+
 hr {
   padding-top: 20px;
   border-top: 0;
@@ -101,7 +105,7 @@ hr {
 }
 
 .save:disabled {
-  
+
 }
 
 .cancel {
@@ -225,4 +229,20 @@ hr {
 
 .swal-overlay {
   background-color: #092532a0;
+}
+
+.mail-btn {
+  width: 80%;
+  margin-left: auto;
+  margin-right:auto;
+  text-shadow: 4px 4px #092532;
+}
+
+a:link {
+  color: #84a9ac;
+}
+
+a:hover {
+  text-decoration: none;
+  color: #e4e3e3;
 }
