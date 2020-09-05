@@ -20,7 +20,8 @@
       </div>
     </div>
     <form class="" action="/compose/<%=page.dateId%>" method="post">
-      <input class="new-entry" type="text" name="newEntry" value="" placeHolder="What are you thinking?">
+      <textarea name="newEntry" placeholder="What are you thinking?" class="txta new-entry"></textarea>
+
       <div align="right">
         <button type="submit" class="save btn btn-outline-dark" id="save">Save</button>
         <a href="/" class="cancel btn btn-outline-light">Cancel</a>
@@ -35,6 +36,7 @@
 <!-- sweetalert -->
 <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
 
+<script src="/scripts/compose.js"></script>
 <script src="/scripts/timer.js"></script>
 
 <%- include("partials/footer") -%>

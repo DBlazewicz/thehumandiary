@@ -97,6 +97,10 @@ hr {
   box-shadow: 4px 4px #092532;
   border: none;
   width: 100%;
+  max-width: 100%;
+  min-width: 100%;
+  min-height: 1rem;
+  
   color: #e4e3e3;
 }
 

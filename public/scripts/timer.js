@@ -16,7 +16,9 @@ function move() {
       swal({
         title: "Good job!",
         text: "You've been reflecting for 5 minutes! Time to wrap up your last thoughts and have a great day.",
-        button: "Continue"
+        buttons: false,
+        timer: 4000
+
       });
       saveButton.disabled = false;
     } else {
