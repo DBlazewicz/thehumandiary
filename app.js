@@ -157,49 +157,88 @@ app.get("/compose/:day", function(req, res) {
       if(err) {
         console.log(err);
       } else {
-        res.render("compose", {page: foundPage, signedIn: true});
-
+        //TODO: better way to look up entries
+        User.findById(req.user.id, function(err, foundUser){
+          if(foundUser.datesPosted.includes(req.params.day)) {
+            //user is updating an entry, load the content
+            Entry.findOne({page: req.params.day, author: req.user.id}, function(err, foundEntry) {
+              bodyText = foundEntry.content;
+              res.render("compose", {page: foundPage, signedIn: true, body: foundEntry.content});
+            })
+          } else {
+            //user is creating a new entry, use the placeholder text
+            res.render("compose", {page: foundPage, signedIn: true, body: ''});
+          }
+        })
       }
     });
   } else {
     res.redirect("/login");
   }
-
 })
 
 app.post("/compose/:day", function(req, res) {
 
+  //if the entry is empty don't save anything
+  //should this behavior be different when 'updating'? maybe perform a delete...
   if(req.body.newEntry !== '') {
-    let newEntry = Entry({
-      author: req.user.id,
-      content: req.body.newEntry,
-      page: req.params.day
-    });
-
-    console.log(req.body.newEntry);
-    Page.findOne({dateId: req.params.day}, function(err, foundPage) {
-      if(err) {
-        console.log(err);
-      } else {
-        foundPage.recentEntries.push(newEntry);
-        foundPage.allEntries.push(newEntry._id);
-        foundPage.save();
-      }
-    });
     User.findById(req.user.id, function(err, foundUser) {
       if(err) {
         console.log(err);
       } else {
-        foundUser.myEntries.push(newEntry._id);
-        foundUser.datesPosted.push(req.params.day);
-        foundUser.save();
-      }
-    });
+        if(foundUser.datesPosted.includes(req.params.day)) {
+          //user is updating an existing entry, update entry.content
+          //in Entry and Page (if it's in recent entries)
+          Entry.findOne({page: req.params.day, author: req.user.id}, function(err, foundEntry) {
+            foundEntry.content = req.body.newEntry;
+            foundEntry.save();
+          });
 
-    newEntry.save();
+          Page.findOne({dateId: req.params.day}, function(err, foundPage) {
+            for (i=0; i < foundPage.recentEntries.length; i++) {
+              if(foundPage.recentEntries[i].author === req.user.id) {
+                foundPage.recentEntries[i].content = req.body.newEntry;
+                foundPage.save();
+                break;
+              }
+            }
+          });
+        } else {
+          //user is creating a new entry
+          let newEntry = Entry({
+            author: req.user.id,
+            content: req.body.newEntry,
+            page: req.params.day
+          });
+
+          console.log(req.body.newEntry);
+          Page.findOne({dateId: req.params.day}, function(err, foundPage) {
+            if(err) {
+              console.log(err);
+            } else {
+              foundPage.recentEntries.push(newEntry);
+              foundPage.allEntries.push(newEntry._id);
+              foundPage.save();
+            }
+          });
+          User.findById(req.user.id, function(err, foundUser) {
+            if(err) {
+              console.log(err);
+            } else {
+              foundUser.myEntries.push(newEntry._id);
+              foundUser.datesPosted.push(req.params.day);
+              foundUser.save();
+            }
+          });
+
+          newEntry.save();
+        }
+      }
+    })
   }
 
   res.redirect("/");
+
 })
 
 app.post("/delete/:entryId", function(req, res) {

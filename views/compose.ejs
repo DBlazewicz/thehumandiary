@@ -20,7 +20,11 @@
       </div>
     </div>
     <form class="" action="/compose/<%=page.dateId%>" method="post">
-      <textarea name="newEntry" placeholder="What are you thinking?" class="txta new-entry"></textarea>
+      <%if(body !== '') {%>
+          <textarea name="newEntry" placeholder="What are you thinking?" class="txta new-entry"><%=body%></textarea>
+      <%} else {%>
+          <textarea name="newEntry" placeholder="What are you thinking?" class="txta new-entry"></textarea>
+      <%}%>
 
       <div align="right">
         <button type="submit" class="save btn btn-outline-dark" id="save">Save</button>
