@@ -273,9 +273,10 @@ a:hover {
 }
 
 .swal2-html-container {
-  /* padding: 17px !important;
+  padding: 17px !important;
   display: block !important;
-  margin: 22px !important; */
+  margin: 22px !important;
+  margin-bottom: 5px !important;
   text-align: center !important;
   color: #e4e3e3 !important;
 }
