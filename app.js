@@ -6,12 +6,13 @@ const ejs = require("ejs");
 const mongoose = require("mongoose");
 const date = require("./date");
 const https = require("https");
-const swal = require("sweetalert");
+// const swal = require("sweetalert");
 const session = require('express-session');
 const passport = require("passport");
 const passportLocalMongoose = require("passport-local-mongoose");
 const findOrCreate = require('mongoose-findorcreate');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
+const Swal = require('sweetalert2');
 
 //setup node app settings
 const app = express();
@@ -31,7 +32,6 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
-//db connection
 mongoose.connect('mongodb+srv://admin:'
   + process.env.DB_PASSWORD +
   '@thddb.dhydb.mongodb.net/test?retryWrites=true&w=majority', {useNewUrlParser: true, useUnifiedTopology: true, useFindAndModify: false});
@@ -242,9 +242,7 @@ app.post("/compose/:day", function(req, res) {
 })
 
 app.post("/delete/:entryId", function(req, res) {
-
   Entry.findByIdAndDelete(req.params.entryId, function(err, foundEntry) {
-
       Page.findOneAndUpdate(
         {dateId: foundEntry.page},
         {$pull: {recentEntries: {_id: foundEntry._id}, allEntries: foundEntry._id}},
